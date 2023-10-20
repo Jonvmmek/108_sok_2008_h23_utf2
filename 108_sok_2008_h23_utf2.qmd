@@ -1,0 +1,190 @@
+---
+title: "SOK-2008 Utfordring 2"
+author: "108"
+format: pdf
+editor: visual
+---
+
+# Utfordring 2
+
+```{r, warning=FALSE}
+#| echo: false
+rm(list=ls())
+library(tidyverse)
+library(gridExtra)
+library(grid)
+library(eurostat)
+library(OECD)
+```
+
+## Utfordring 2.1 - Minstelønn
+
+-   Bruk økonomisk teori og grafisk analyse til å gi intuisjon til begge disse påstandene.
+
+    -   «Minstelønninger fører til **økt** fattigdom».
+
+    Ved innføring av minstelønn vil man kunne sikre inntekten til personer i jobb ved å gi arbeidsgivere et minimumskrav til lønningene man kan gi til arbeiderene. Minstelønn kan føre til at flere personer kommer i fast arbeid, men kan virke negativ for individer med høy effektivitet på jobb, da 2 personer med høy og lav effektivitet vil få samme lønn uansett personens effektivitet.
+
+    Minstelønn kan føre til større fattigdom for uorganiserte arbeidstakere, da en person med organiserte rettigheter på grunn av bant annet utdanning og ansiennitet vil kunne få høyere lønninger en uorganiserte personer for samme type samme arbeid. Det vil og klart være negativt for allerede organiserte arbeidstakere at minstelønninger blir innført, da minstelønn blir et alternativ for arbeidsgivere.
+
+    De negative effektene av minstelønn manifesteres i at bedrifter som produserer kan gi mindre lønn til de fleste arbeiderene, de kan på grunn av mindre lønnsutgifter ansette flere arbeidere og produsere mer, men de fleste arbeiderene vil ikke få det bedre av at bedriften gjør det bra.
+
+-   \- «Minstelønninger fører til mindre fattigdom».
+
+    Minstelønninger har som mål med å jevne forskjellene i samfunnet, lønnsgulvet blir satt til et hvis nivå slik at arbeidsgivere ikke kan gi arbeiderne lønn de så vidt kan livnære seg av. Det vil også føre til høyere yrkesdeltakelse med å få flere inn på arbeidsmarkedet, og gi bedre muligheter for arbeidstakere uten mulighet for høy effektivitet på arbeidsmarkedet.
+
+    Når bedriftene produserer vil de regne ut hvor mange arbeidere de er villig til å ansette, dersom minstelønninger er med på å jevne ut hvor mye enkeltindivider får i lønn kan det føre til at produsentene kan ansette flere og på denne måten vil fattigdom kunne reduseres.
+
+```{r}
+# 1.1 Sysselsetting
+employment <- get_eurostat(id = "lfsi_emp_a", 
+                           type = "label")
+# 1.2 MinstelC8nn
+minwage<-get_eurostat("earn_mw_avgr2", type = "label")
+```
+
+```{r}
+employment <- employment %>%
+    filter(time == '2021-01-01') %>%
+  filter(age == 'From 20 to 64 years')  %>%
+  filter(indic_em == 'Total employment (resident population concept - LFS)') %>%
+  filter(unit == 'Percentage of total population') %>%
+  filter(sex == 'Total')
+```
+
+```{r}
+minwage <- minwage %>%
+  filter(time == '2021-01-01') %>%
+    filter(indic_se == "Monthly minimum wage as a proportion of the mean gross monthly earnings") %>%
+  group_by(geo) %>%
+  summarize(values = sum(values)/2)
+#  pivot_wider(names_from = geo, values_from = values) %>%
+
+employment <- employment[-c(1,2,4,5,8,9,11,13,14,18,19,20,26,31), ]
+
+minwage <- minwage[-c(1,13), ]
+
+data <- employment %>%
+  arrange(geo) %>%
+  cbind(minwage$values)
+```
+
+```{r}
+data %>%
+  ggplot(aes(x = values ,y =`minwage$values` ))+
+  geom_point(color="white")+ # ta vekk "original-punkt"
+  geom_text(aes(label=geo),size=3)+ # label = geo fC8rer til at landsnavn blir brukt isteden for punkt
+  labs(title = 'Arbeidere i aldersgruppe 20 til 64', x ="% av aldergruppe i jobb", y = "Minstelønn")+
+  theme_classic()+
+  geom_smooth(method=lm, se=FALSE) + # Korrelasjonslinje
+  geom_text(aes(x = max(values), y = max(`minwage$values`), #Plassering av korrelasjons-koeffisient 
+                label = paste("Korrelasjon:", round(cor(values, `minwage$values`), 2))),
+            hjust = 1, vjust = 1, size = 4, color = "red")
+```
+
+Vi observerer i denne grafen nivået på minstelønn og hvor mange i aldersgruppen 20-64 som er i arbeid.
+
+Nederland viser at 81,7 % i denne aldergruppen er sysselsatt, og minstelønn nivået til de som jobber er 42,85 % av gjennomsnittsinntekten i Nederland. Vi kan anta at om det ikke var minstelønn i Nederland ville antallet mennesker i jobb være mindre en 81,7. Basert på dette kan man trekke positive korrelasjoner mellom minstelønn og sysselsetting. Kollektivt er det positivt for Nederland da flere er i jobb, men på bekostningen til mange arbeidstakere i Nederland som nødvendigvis ikke ville hatt minstelønn, altså de som har gått ned i lønn på grunn av minstelønn.
+
+jo høyere arbeidsdeltakelse det er i et land jo bedre økonomisk tilstand vil landet befinne seg i dersom landet vil kunne beskatte flere arbeidstakere dersom mange er i fast arbeid. Dette vil kunne gagne arbeidsgivere som med statlig støtte vil kunne ansette enda flere arbeidere og redusere arbeidsledigheten i landet.
+
+Men hvorfor har ikke alle jobb dersom arbeidskraften er billig? Estland vises nederst på grafen med 37,75 prosent på minstelønn og 79,3 på antall sysselsatte. Hvorfor har ikke Estland flere sysselsatte en Nederland? Det kan kun bety at minstelønninger bare virker til å minke forskjellene til en hvis grad. Om det var slik at billig arbeidskraft fører til flere arbeidsplasser ville flere vært sysselsatt i Estland en i Nederland.
+
+En metode for å vise kausalitet er å se om lignende data har samme effekter i forskjellige land. Vi kan ved dette vise til at det ikke er en direkte kausal effekt mellom billig arbeidskraft og antall arbeidsplasser. Det vil også i dette tilfellet vise til at minstelønn i noen tilfeller vil føre til mer fattigdom og forskjeller dersom det er lite behov for arbeidskraft.
+
+## Utfordring 2.2 - Fagforeninger
+
+```{r}
+# 2.1 Arbeidsledighet
+unemployment <- get_dataset("MIG_NUP_RATES_GENDER")
+# 2.2 Fagforeninger
+union <- get_dataset("TUD")
+```
+
+```{r}
+unemployment <- unemployment %>%
+    filter(Time == '2018') %>%
+  filter(GENDER == 'TOT')
+
+union <- union %>%
+    filter(Time == '2018')
+
+unemployment <- unemployment[-c(22:24,28:30,150:152,153:155,180:182,183:185), ]
+
+union <- union[-c(13,14,27,28,29), ]
+
+UNE_FB <- unemployment %>%
+ filter(BIRTH == "FB") %>%
+  filter(RATE == "U_RATE") #velger unemployment rate
+
+UNE_NB <- unemployment %>%
+   filter(BIRTH == "NB") %>%
+    filter(RATE == "U_RATE")
+
+UNE_NB <- UNE_NB[-c(8,10), ]
+
+UNE_FB<- UNE_FB[-c(18,19,28), ]
+```
+
+```{r}
+UN_NB <- UNE_NB %>%
+  cbind(union$ObsValue)
+
+UN_FB <- UNE_FB %>%
+  cbind(union$ObsValue)
+
+UN_NB$ObsValue <- as.numeric(UN_NB$ObsValue)
+UN_NB$`union$ObsValue` <- as.numeric(UN_NB$`union$ObsValue`)
+UN_FB$ObsValue <- as.numeric(UN_FB$ObsValue)
+UN_FB$`union$ObsValue` <- as.numeric(UN_FB$`union$ObsValue`)
+```
+
+```{r}
+plot_1 <- UN_NB %>%
+  ggplot(aes(x = ObsValue ,y = `union$ObsValue`))+
+  geom_point(color="white")+ # ta vekk "original-punkt"
+  geom_text(aes(label=COUNTRY),size=3)+ # label = geo fC8rer til at landsnavn blir brukt isteden for punkt
+  labs(title = 'Native Borns(NB)',x ="% arbeidsledige", y = "organisasjonsgrad")+
+  theme_classic()+
+  geom_smooth(method=lm, se=FALSE) + # Korrelasjonslinje
+  geom_text(aes(x = max(ObsValue), y = max(`union$ObsValue`), #Plassering av korrelasjons-koeffisient 
+                label = paste("Korrelasjon:", round(cor(ObsValue, `union$ObsValue`), 2))),
+            hjust = 1, vjust = 1, size = 4, color = "red")
+plot_1
+```
+
+```{r}
+plot_2 <-UN_FB %>%
+  ggplot(aes(x = ObsValue ,y = `union$ObsValue`))+
+  geom_point(color="white")+ # ta vekk "original-punkt"
+  geom_text(aes(label=COUNTRY),size=3)+ # label = geo fC8rer til at landsnavn blir brukt isteden for punkt
+  labs(title = 'Foreign Borns(FB)', x ="% arbeidsledige", y = "% organisasjonsgrad")+
+  theme_classic()+ 
+  geom_smooth(method=lm, se=FALSE) + # Korrelasjonslinje
+  geom_text(aes(x = max(ObsValue), y = max(`union$ObsValue`), #Plassering av korrelasjons-koeffisient 
+                label = paste("Korrelasjon:", round(cor(ObsValue, `union$ObsValue`), 2))),
+            hjust = 1, vjust = 1, size = 4, color = "red")
+plot_2
+```
+
+```{r}
+grid.arrange(plot_1,plot_2, nrow = 1,  top = textGrob("NB og FB",gp=gpar(fontsize=14,font=3)))
+```
+
+*Bruk økonomisk teori og grafisk analyse til å gi intuisjon til påstanden «Sterke fagforeninger reduserer velferden.*
+
+Fagforeningene sin jobb er å verne for rettighetene til sine medlemmer, dette gjennom å sette et prisgulv på hvor mye arbeidstakeren som er organisert er villig til å jobbe for. Dette kan virke positivt for de som før organiseringen hadde lav lønn, som også betyr at for de som før organiseringen var høytlønnet vil kunne virke negativt.
+
+Sterke fagforeninger legger reservasjonslønnen til sine medlemmer høyt, som kan føre til at arbeidsgivere og produsenter får råd til færre ansatte og vil føre til større forskjeller i samfunnet.
+
+*Diskuter dine empiriske observasjoner ut fra økonomisk teori om forhandling mellom arbeidsmarkedets parter og medlemsbasens sammensetning.*
+
+I denne grafen om innenlands fødte og utenlands fødte vises det at innenlands fødte har både større organisasjonsgrad og har færre arbeidsledige en utenlandsfødte, som er mindre organisert og er i større grad arbeidsledige. Grunner til en lavere organisasjonsgrad blant utenlandsfødte kan være mange, det kan være mindre utbredt å være organisert i arbeidsplassene utenlandsfødte tar, det kan være lite informasjonsflyt om organisering, det kan også være nytten av å organisere seg ikke er stor nok til å veie risikoen.
+
+Under forhandlinger er fagforeningene interessert i å maksimere nytten til sine medlemmer, produsentene sitt mål er å kunne ansette så mange som mulig til så lav lønn som mulig. Under denne forhandlingen vil de måtte møtes i midten og fagforeningene må nødvendigvis akseptere et lavere lønnsgulv en først ønsket. Dette er med på å videre redusere velferden til arbeiderene.
+
+Om fagforeningene sier seg villig til for lav lønn vil de organiserte medlemmene miste insentivene til å være organisert og fagforeningene vil på denne måten miste forhandlingskraft da de blir støttet av færre arbeidstakere. Ut fra dette kan man anta at det finnes at tak for hvor mange det er som samtidig kan få nytte fra å være organisert. Om alle skulle vært organisert ville reservasjonslønnen til de organiserte vært lavere til den grad slik at alle vil kunne vært inne på arbeidsmarkedet samtidig, noe som gjør at den generelle velferden til arbeiderene ville være lavere.
+
+Appendiks/erklæring om bruk av AI.
+
+I denne oppgaven er det ikke brukt noen for AI (kunstig intelligens) for å løse oppgavene.
